@@ -9,7 +9,7 @@ import json
 import databases
 import toml
 
-from quart import Quart, g, request, abort, make_response, jsonify
+from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request
 
 app = Quart(__name__)
@@ -73,8 +73,9 @@ async def create_user(data):
 async def login():
     db = await _get_db()
 
-    await check_user(db, request.authorization)
+    user_id = await check_user(db, request.authorization)
 
+    await db.execute("UPDATE users set is_authenticated = 1 where user_id=:user_id", values={"user_id": user_id})
     success_response = {"authenticated": True}
     return success_response, 200
 
@@ -82,27 +83,77 @@ async def login():
 @app.route("/games", methods=["POST"])
 async def create_game():
     db = await _get_db()
-
-    user_id = await check_user(db, request.authorization)
-
+    data = await request.json
+    res = await db.fetch_one("SELECT user_id from users where username=:user_name "
+                             "and is_authenticated =:is_authenticated",
+                             values={"user_name": data['username'], "is_authenticated": 1})
+    if not res:
+        abort(401)
+    print(res.user_id)
+    user_id = res.user_id
     # open a file and load json from it
-    answers = load_json_from_file('./share/correct.json')
-    print(len(answers))
-    print(answers)
+    res = await db.fetch_one("SELECT count(*) count from correct_words")
     # select a word from list of secret words, word should be different from any word previously assigned to users
-    while True:
-        length = len(answers)
-        chosen_word = answers[random.randint(1, length - 1)]
-        print('chosen word : ' + chosen_word)
-        word_exists = await db.fetch_all('SELECT 1 from games where secret_word = :secret_word'
-                                         , values={"secret_word": chosen_word})
-        if not word_exists:
-            break
-
-    game_id = await db.execute("INSERT INTO games(user_id, secret_word) VALUES(:user, :secret_word)"
-                               , values={"user": user_id, "secret_word": chosen_word})
+    length = res.count
+    print(length)
+    game_id = await db.execute("INSERT INTO games(user_id, secret_word_id) VALUES(:user, :secret_word_id)"
+                               , values={"user": user_id, "secret_word_id": random.randint(1, length - 1)})
 
     return {"game_id": game_id, "message": "Game Successfully Created"}, 200
+
+
+@app.route("/stats",methods=["POST"])
+async def statistics():
+    db = await _get_db()
+    data = await request.json
+    res = await db.fetch_one("SELECT user_id from users where username=:user_name "
+                             "and is_authenticated =:is_authenticated",
+                             values={"user_name": data['username'], "is_authenticated": 1})
+    if not res:
+        abort(401)
+    print(res.user_id)
+    user_id = res.user_id
+
+    res_games = await db.fetch_all("SELECT guess_remaining,game_id FROM games where user_id =:user_id ",
+                                   values={"user_id" : user_id})
+
+    print(res_games)
+    games_stats = []
+    for guess_remaining,game_id in res_games:
+        games_stats.append({
+            "guess_remaining":guess_remaining,
+            "game_id":game_id
+        })
+
+
+    return games_stats
+
+@app.route("/results",methods=["POST"])
+async def result():
+    db = await _get_db()
+    data = await request.json
+    res = await db.fetch_one("SELECT user_id from users where username=:user_name "
+                             "and is_authenticated =:is_authenticated",
+                             values={"user_name": data['username'], "is_authenticated": 1})
+    if not res:
+        abort(401)
+    print(res.user_id)
+    user_id = res.user_id
+
+    res_games = await db.fetch_all("SELECT state, count(*) from games where user_id=:user_id GROUP BY state",
+                                   values={"user_id" : user_id})
+    states = {0: 'In Progress', 1: 'Win', 2: "Loss"}
+    print(res_games)
+    games_stats = []
+    for state,count in res_games:
+        games_stats.append({
+            "state":states[state],
+            "count":count
+        })
+
+
+    return games_stats
+
 
 
 @app.route("/games/<int:game_id>/play", methods=["POST"])
@@ -110,22 +161,33 @@ async def play_game(game_id):
     db = await _get_db()
     data = await request.json
 
-    user_id = await check_user(db, request.authorization)
+    data = await request.json
+    res = await db.fetch_one("SELECT user_id from users where username=:user_name "
+                             "and is_authenticated =:is_authenticated",
+                             values={"user_name": data['username'], "is_authenticated": 1})
+    if not res:
+        abort(401)
+    print(res.user_id)
+    user_id = res.user_id
+
     if data is not None and "word" in data:
         guess = data["word"]
         if len(guess) != 5:
             abort(400, "Bad Request: Word length should be 5")
         # open a file and load json from it
-        answers = load_json_from_file('./share/correct.json')
-        valid_words = load_json_from_file('./share/valid.json')
-        total_valid_words = answers + valid_words
+        res0 = await db.fetch_one("SELECT correct_word_id from correct_words WHERE correct_word =:word", values={"word":guess})
+        res = await db.fetch_one("SELECT valid_word_id from valid_words WHERE valid_word =:word", values={"word":guess})
+        if not res:
+            if not res0:
+                abort(400, "Bad Request: Not a valid guess")
 
-        if guess not in total_valid_words:
-            abort(400, "Bad Request: Not a valid guess")
+
 
     states = {0: 'In Progress', 1: 'Win', 2: "Loss"}
-    result = await db.fetch_one("SELECT secret_word, guess_remaining, state FROM games WHERE user_id=:user_id "
-                                "AND game_id=:game_id", values={"game_id": game_id, "user_id": user_id})
+    result = await db.fetch_one("SELECT correct_words.correct_word secret_word, guess_remaining, state FROM games "
+                                " join correct_words WHERE user_id=:user_id "
+                                "AND game_id=:game_id AND correct_words.correct_word_id=games.secret_word_id",
+                                values={"game_id": game_id, "user_id": user_id})
 
     print(result)
     if not result:
@@ -158,15 +220,18 @@ async def play_game(game_id):
                              values={"guess_remaining": guess_remaining, "game_id": game_id})
 
             guess_number = 6 - guess_remaining
-            await db.execute('INSERT INTO guesses(game_id, valid_word, guess_number) '
-                             'VALUES(:game_id, :valid_word, :guess_number)'
-                             , values={"game_id": game_id, "valid_word": guess, "guess_number": guess_number})
-
+            valid_word_id = res.valid_word_id
+            await db.execute('INSERT INTO guesses(game_id, valid_word_id, guess_number) '
+                             'VALUES(:game_id, :valid_word_id, :guess_number)'
+                             , values={"game_id": game_id, "valid_word_id": valid_word_id, "guess_number": guess_number})
     # prepare the response
-    res = await db.fetch_all('SELECT guess_number, valid_word from guesses '
-                             'where game_id=:game_id order by guess_number',
+    res = await db.fetch_all("SELECT guess_number, valid_words.valid_word from guesses join "
+                             "valid_words where game_id=:game_id "
+                             "and valid_words.valid_word_id=guesses.valid_word_id "
+                             " order by guess_number",
                              values={"game_id": game_id})
     guesses = []
+    print(res)
     for guess_number, valid_word in res:
         correct_positions, incorrect_positions = compare(secret_word, valid_word)
         guesses.append(
