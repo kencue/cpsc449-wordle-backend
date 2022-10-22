@@ -28,7 +28,7 @@
 - Retrieve the state of a game in progress
 - List the games in progress for a user
 - Check the statistics for a particular user
-
+- Password hashing and decoding.
 
 ## How to Use
 - Go to the project's directory
