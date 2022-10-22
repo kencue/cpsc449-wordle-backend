@@ -133,7 +133,7 @@ async def play_game(username, game_id):
 
 @tag(["Statistics"])
 @app.route("/users/<string:username>/games", methods=["GET"])
-async def statistics(username):
+async def get_in_progress_games(username):
     """ Check the list of in-progress games for a particular user """
     db = await _get_db()
     user_id = await fetch_user_id(db, username)
