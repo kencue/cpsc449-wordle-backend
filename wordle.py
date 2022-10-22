@@ -103,7 +103,6 @@ async def create_game(username):
 
     # Open a file and load json from it
     res = await db.fetch_one("SELECT count(*) count from correct_words")
-    # Select a word from list of secret words, word should be different from any word previously assigned to users
     length = res.count
     game_id = await db.execute("INSERT INTO games(user_id, secret_word_id) VALUES(:user, :secret_word_id)"
                                , values={"user": user_id, "secret_word_id": random.randint(1, length)})
