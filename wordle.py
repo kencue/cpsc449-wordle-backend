@@ -1,12 +1,20 @@
+#!/usr/bin/env python3.8
 # Imports
 import dataclasses
 import random
 import sqlite3
 import textwrap
 import databases
+from sqlalchemy import true
 import toml
+import base64
+import hashlib
+import secrets
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request, tag
+
+# Encryption type.
+ALGORITHM = "pbkdf2_sha256"
 
 # Initialize the app
 app = Quart(__name__)
@@ -16,7 +24,6 @@ QuartSchema(app, tags=[{"name": "Users", "description": "APIs for creating a use
                        {"name": "Statistics", "description": "APIs for checking user statistics"},
                        {"name": "Root", "description": "Root path returning html"}])
 app.config.from_file(f"./etc/{__name__}.toml", toml.load)
-
 
 # Decorator to examine class and find fields
 @dataclasses.dataclass
@@ -29,7 +36,6 @@ class User:
 class Word:
     guess: str
 
-
 # Establish database connection
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
@@ -38,14 +44,12 @@ async def _get_db():
         await db.connect()
     return db
 
-
 # Terminate database connection
 @app.teardown_appcontext
 async def close_connection(exception):
     db = getattr(g, "_sqlite_db", None)
     if db is not None:
         await db.disconnect()
-
 
 @tag(["Root"])
 @app.route("/", methods=["GET"])
@@ -58,7 +62,6 @@ async def index():
         """
     )
 
-
 @tag(["Users"])
 @app.route("/users", methods=["POST"])
 @validate_request(User)
@@ -66,6 +69,8 @@ async def create_user(data):
     """  Create a user """
     db = await _get_db()
     user = dataclasses.asdict(data)
+    # Encrypt password
+    user["password"] = hash_password(user["password"])
     # Insert into database
     try:
         await db.execute(
@@ -79,7 +84,6 @@ async def create_user(data):
         abort(409, e)
     return {"Message": "User Successfully Created. Please login and create a game"}, 201
 
-
 @tag(["Users"])
 # Endpoint for /login, verifies credentials.
 @app.route("/login", methods=["GET"])
@@ -89,7 +93,6 @@ async def login():
     await check_user(db, request.authorization)
     success_response = {"authenticated": True}
     return success_response, 200
-
 
 @tag(["Games"])
 @app.route("/users/<string:username>/games", methods=["POST"])
@@ -107,7 +110,6 @@ async def create_game(username):
 
     return {"game_id": game_id, "message": "Game Successfully Created"}, 200
 
-
 @validate_request(Word)
 @tag(["Games"])
 @app.route("/users/<string:username>/games/<int:game_id>", methods=["POST"])
@@ -119,7 +121,6 @@ async def play_game(username, game_id):
 
     return await play_game_or_check_progress(db, user_id, game_id, data["guess"])
 
-
 @tag(["Games"])
 @app.route("/users/<string:username>/games/<int:game_id>", methods=["GET"])
 async def check_game_progress(username, game_id):
@@ -128,7 +129,6 @@ async def check_game_progress(username, game_id):
     user_id = await get_user_id(db, username)
 
     return await play_game_or_check_progress(db, user_id, game_id)
-
 
 @tag(["Statistics"])
 @app.route("/users/<string:username>/games", methods=["GET"])
@@ -150,7 +150,6 @@ async def get_in_progress_games(username):
 
     return in_progress_games
 
-
 @tag(["Statistics"])
 @app.route("/users/<string:username>/statistics", methods=["GET"])
 async def statistics(username):
@@ -167,30 +166,25 @@ async def statistics(username):
 
     return games_stats
 
-
 # Error status: Client error.
 @app.errorhandler(RequestSchemaValidationError)
 def bad_request(e):
     return {"error": str(e.validation_error)}, 400
-
 
 # Error status: Cannot process request.
 @app.errorhandler(409)
 def conflict(e):
     return {"error": str(e)}, 409
 
-
 # Error status: Unauthorized client.
 @app.errorhandler(401)
 def unauthorized(e):
     return {}, 401, {"WWW-Authenticate": "Basic realm='Wordle Site'"}
 
-
 # Error status: Cannot or will not process the request.
 @app.errorhandler(400)
 def bad_request(e):
     return jsonify({'message': e.description}), 400
-
 
 async def play_game_or_check_progress(db, user_id, game_id, guess=None):
     states = {0: 'In Progress', 1: 'Win', 2: "Loss"}
@@ -265,14 +259,12 @@ async def play_game_or_check_progress(db, user_id, game_id, guess=None):
 
     return {"guesses": guesses, "guess_remaining": guess_remaining, "game_state": states[state]}, 200
 
-
 async def get_user_id(db, username):
     res = await db.fetch_one("SELECT user_id from users where username=:user_name ",
                              values={"user_name": username})
     if not res:
         abort(401)
     return res.user_id
-
 
 # Function to compare the guess to answer.
 def compare(secret_word, guess):
@@ -300,15 +292,38 @@ def compare(secret_word, guess):
 
     return correct_positions, incorrect_positions
 
-
 # User authentication.
 async def check_user(db, auth):
+
     if auth is not None and auth.type == 'basic':
-        user_info = await db.fetch_one("SELECT 1 FROM users where username = :username and password =:password",
-                                       values={"username": auth.username, "password": auth.password})
+        user_info = await db.fetch_one("SELECT password FROM users where username = :username",
+                                       values={"username": auth.username})
         if user_info:
-            return True
+            if verify_password(auth.password, user_info["password"]):
+                return True
+            else:
+                abort(401)
         else:
             abort(401)
     else:
         abort(401)
+
+# Hash a given password using pbkdf2.
+def hash_password(password, salt=None, iterations=260000):
+    if salt is None:
+        salt = secrets.token_hex(16)
+    assert salt and isinstance(salt, str) and "$" not in salt
+    assert isinstance(password, str)
+    pw_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+    b64_hash = base64.b64encode(pw_hash).decode("ascii").strip()
+    return "{}${}${}${}".format(ALGORITHM, iterations, salt, b64_hash)
+
+# Verify a password by comparing it to the hash.
+def verify_password(password, password_hash):
+    if (password_hash or "").count("$") != 3:
+        abort(401)
+    algorithm, iterations, salt, b64_hash = password_hash.split("$", 3)
+    iterations = int(iterations)
+    assert algorithm == ALGORITHM
+    compare_hash = hash_password(password, salt, iterations)
+    return secrets.compare_digest(password_hash, compare_hash)
