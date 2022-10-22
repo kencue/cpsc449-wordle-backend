@@ -21,14 +21,13 @@
 - HTTPie
 
 ## REST API for the Project
-- Register a user
-- Authenticate a user 
+- Register a user (includes password hashing)
+- Authenticate a user (includes hashing verification)
 - Start a new game
 - Guess a five-letter word
 - Retrieve the state of a game in progress
 - List the games in progress for a user
 - Check the statistics for a particular user
-- Password hashing and decoding.
 
 ## How to Use
 - Go to the project's directory
