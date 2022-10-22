@@ -11,14 +11,17 @@ app = Quart(__name__)
 QuartSchema(app)
 app.config.from_file(f"../etc/wordle.toml", toml.load)
 
+
 # Load json from file and convert unicode to string.
 def load_json_from_file(file_name):
     f = open(file_name)
     data = json.load(f)
     values = []
+    # converting unicode to string values
     for item in data:
         values.append(str(item))
     return values
+
 
 # Establish database connection.
 async def _get_db():
@@ -26,18 +29,21 @@ async def _get_db():
     await db.connect()
     return db
 
-# Populate valid words into database.
-async def valid_words(filename, tablename):
-    answers = load_json_from_file(filename)
-    print(type(answers))
-    res = {}
-    for value in answers:
-        db = await _get_db()
-        res = await db.execute("INSERT into " + tablename + "(" + tablename[:-1] + ") values(:valid_word)",
-                               {"valid_word": value})
-    return res
+
+# Populate valid and correct words into database.
+async def load_data(file_name, table_name):
+    data = load_json_from_file(file_name)
+    words = []
+    for item in data:
+        words.append({"word": item})
+
+    print("Loading data into " + table_name + " table, please wait...")
+    db = await _get_db()
+    await db.execute_many("INSERT into " + table_name + "(" + table_name[:-1] + ") values(:word)", words)
+
 
 # Run when executed as script.
 if __name__ == "__main__":
-    asyncio.run(valid_words('./share/correct.json', 'correct_words'))
-    asyncio.run(valid_words('./share/valid.json', 'valid_words'))
+    asyncio.run(load_data('./share/correct.json', 'correct_words'))
+    asyncio.run(load_data('./share/valid.json', 'valid_words'))
+    print("Loading of tables complete")
