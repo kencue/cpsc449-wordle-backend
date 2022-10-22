@@ -4,12 +4,10 @@ DROP TABLE IF EXISTS guesses;
 DROP TABLE IF EXISTS games;
 DROP TABLE IF EXISTS users;
 
--- is_authenticated -> 0 means unauthenticated 1 means authenticated
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY,
     username VARCHAR UNIQUE,
-    password VARCHAR NOT NULL,
-    is_authenticated integer default 0
+    password VARCHAR NOT NULL
 );
 -- state - 0 means game in progress, 1 means game finished and won the game, 2 means finished and lost the game
 CREATE TABLE games (

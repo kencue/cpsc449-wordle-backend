@@ -86,8 +86,7 @@ async def create_user(data):
 async def login():
     """ Authenticate the user """
     db = await _get_db()
-    user_id = await check_user(db, request.authorization)
-    await db.execute("UPDATE users set is_authenticated = 1 where user_id=:user_id", values={"user_id": user_id})
+    await check_user(db, request.authorization)
     success_response = {"authenticated": True}
     return success_response, 200
 
@@ -95,9 +94,9 @@ async def login():
 @tag(["Games"])
 @app.route("/users/<string:username>/games", methods=["POST"])
 async def create_game(username):
-    """ Create a game for a particular user """
+    """ Create a game """
     db = await _get_db()
-    user_id = await fetch_user_id(db, username)
+    user_id = await get_user_id(db, username)
 
     # Open a file and load json from it
     res = await db.fetch_one("SELECT count(*) count from correct_words")
@@ -109,16 +108,6 @@ async def create_game(username):
     return {"game_id": game_id, "message": "Game Successfully Created"}, 200
 
 
-@tag(["Games"])
-@app.route("/users/<string:username>/games/<int:game_id>", methods=["GET"])
-async def check_game_progress(username, game_id):
-    """ Check the progress of the game """
-    db = await _get_db()
-    user_id = await fetch_user_id(db, username)
-
-    return await play_game_or_check_progress(db, user_id, game_id)
-
-
 @validate_request(Word)
 @tag(["Games"])
 @app.route("/users/<string:username>/games/<int:game_id>", methods=["POST"])
@@ -126,9 +115,19 @@ async def play_game(username, game_id):
     """ Play the game (creating a guess) """
     data = await request.json
     db = await _get_db()
-    user_id = await fetch_user_id(db, username)
+    user_id = await get_user_id(db, username)
 
     return await play_game_or_check_progress(db, user_id, game_id, data["guess"])
+
+
+@tag(["Games"])
+@app.route("/users/<string:username>/games/<int:game_id>", methods=["GET"])
+async def check_game_progress(username, game_id):
+    """ Check the state of a game that is in progress. If game is over show whether user won/lost and no. of guesses """
+    db = await _get_db()
+    user_id = await get_user_id(db, username)
+
+    return await play_game_or_check_progress(db, user_id, game_id)
 
 
 @tag(["Statistics"])
@@ -136,7 +135,7 @@ async def play_game(username, game_id):
 async def get_in_progress_games(username):
     """ Check the list of in-progress games for a particular user """
     db = await _get_db()
-    user_id = await fetch_user_id(db, username)
+    user_id = await get_user_id(db, username)
 
     # showing only in-progress games
     games_output = await db.fetch_all("SELECT guess_remaining,game_id, state FROM games where user_id =:user_id "
@@ -157,7 +156,7 @@ async def get_in_progress_games(username):
 async def statistics(username):
     """ Checking the statistics for a particular user """
     db = await _get_db()
-    user_id = await fetch_user_id(db, username)
+    user_id = await get_user_id(db, username)
 
     res_games = await db.fetch_all("SELECT state, count(*) from games where user_id=:user_id GROUP BY state",
                                    values={"user_id": user_id})
@@ -267,10 +266,9 @@ async def play_game_or_check_progress(db, user_id, game_id, guess=None):
     return {"guesses": guesses, "guess_remaining": guess_remaining, "game_state": states[state]}, 200
 
 
-async def fetch_user_id(db, username):
-    res = await db.fetch_one("SELECT user_id from users where username=:user_name "
-                             "and is_authenticated =:is_authenticated",
-                             values={"user_name": username, "is_authenticated": 1})
+async def get_user_id(db, username):
+    res = await db.fetch_one("SELECT user_id from users where username=:user_name ",
+                             values={"user_name": username})
     if not res:
         abort(401)
     return res.user_id
@@ -300,17 +298,16 @@ def compare(secret_word, guess):
                 secret_word_lst.pop(j)
                 break
 
-
     return correct_positions, incorrect_positions
 
 
 # User authentication.
 async def check_user(db, auth):
     if auth is not None and auth.type == 'basic':
-        user_info = await db.fetch_one("SELECT user_id FROM users where username = :username and password =:password",
+        user_info = await db.fetch_one("SELECT 1 FROM users where username = :username and password =:password",
                                        values={"username": auth.username, "password": auth.password})
         if user_info:
-            return user_info.user_id
+            return True
         else:
             abort(401)
     else:
