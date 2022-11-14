@@ -240,3 +240,27 @@ def compare(secret_word, guess):
                 break
 
     return correct_positions, incorrect_positions
+
+
+# Error status: Client error.
+@app.errorhandler(RequestSchemaValidationError)
+def bad_request(e):
+    return {"error": str(e.validation_error)}, 400
+
+
+# Error status: Cannot process request.
+@app.errorhandler(409)
+def conflict(e):
+    return {"error": str(e)}, 409
+
+
+# Error status: Unauthorized client.
+@app.errorhandler(401)
+def unauthorized(e):
+    return {}, 401, {"WWW-Authenticate": "Basic realm='Wordle Site'"}
+
+
+# Error status: Cannot or will not process the request.
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({'message': e.description}), 400
