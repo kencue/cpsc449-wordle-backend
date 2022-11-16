@@ -67,7 +67,7 @@ async def index():
 
 
 @tag(["Users"])
-@app.route("/users", methods=["POST"])
+@app.route("/register", methods=["POST"])
 @validate_request(User)
 async def create_user(data):
     """  Create a user """
