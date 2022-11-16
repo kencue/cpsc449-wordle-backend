@@ -44,10 +44,11 @@ async def close_connection(exception):
 
 
 @tag(["Games"])
-@app.route("/users/<string:username>/games", methods=["POST"])
-async def create_game(username):
+@app.route("/games", methods=["POST"])
+async def create_game():
     """ Create a game """
     db = await _get_db()
+    username = request.authorization.username
 
     # Open a file and load json from it
     res = await db.fetch_one("SELECT count(*) count from correct_words")
@@ -63,29 +64,33 @@ async def create_game(username):
 
 @validate_request(Word)
 @tag(["Games"])
-@app.route("/users/<string:username>/games/<string:game_id>", methods=["POST"])
-async def play_game(username, game_id):
+@app.route("/games/<string:game_id>", methods=["POST"])
+async def play_game(game_id):
     """ Play the game (creating a guess) """
     data = await request.json
     db = await _get_db()
+
+    username = request.authorization.username
 
     return await play_game_or_check_progress(db, username, game_id, data["guess"])
 
 
 @tag(["Games"])
-@app.route("/users/<string:username>/games/<string:game_id>", methods=["GET"])
-async def check_game_progress(username, game_id):
+@app.route("/games/<string:game_id>", methods=["GET"])
+async def check_game_progress(game_id):
     """ Check the state of a game that is in progress. If game is over show whether user won/lost and no. of guesses """
     db = await _get_db()
+    username = request.authorization.username
 
     return await play_game_or_check_progress(db, username, game_id)
 
 
 @tag(["Statistics"])
-@app.route("/users/<string:username>/games", methods=["GET"])
-async def get_in_progress_games(username):
+@app.route("/games", methods=["GET"])
+async def get_in_progress_games():
     """ Check the list of in-progress games for a particular user """
     db = await _get_db()
+    username = request.authorization.username
 
     # showing only in-progress games
     games_output = await db.fetch_all("SELECT guess_remaining,game_id, state FROM games where username =:username "
@@ -102,10 +107,11 @@ async def get_in_progress_games(username):
 
 
 @tag(["Statistics"])
-@app.route("/users/<string:username>/statistics", methods=["GET"])
-async def statistics(username):
+@app.route("/games/statistics", methods=["GET"])
+async def statistics():
     """ Checking the statistics for a particular user """
     db = await _get_db()
+    username = request.authorization.username
 
     res_games = await db.fetch_all("SELECT state, count(*) from games where username=:username GROUP BY state",
                                    values={"username": username})
