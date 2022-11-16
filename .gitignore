@@ -1,2 +1,3 @@
-/var/wordle.db
+/var/game.db
+/var/user.db
 __pycache__/
