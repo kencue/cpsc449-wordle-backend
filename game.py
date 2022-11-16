@@ -2,6 +2,7 @@
 # Imports
 import dataclasses
 import random
+import textwrap
 import uuid
 import databases
 import toml
@@ -41,6 +42,17 @@ async def close_connection(exception):
     db = getattr(g, "_sqlite_db", None)
     if db is not None:
         await db.disconnect()
+
+@tag(["Root"])
+@app.route("/", methods=["GET"])
+async def index():
+    """ Root path, returns HTML """
+    return textwrap.dedent(
+        """
+        <h1>Wordle Game</h1>
+        <p>To use the games api, login first.</p>\n
+        """
+    )
 
 
 @tag(["Games"])
