@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS games;
 -- state - 0 means game in progress, 1 means game finished and won the game, 2 means finished and lost the game
 CREATE TABLE games (
     game_id VARCHAR PRIMARY KEY,
-    username INTEGER NOT NULL,
+    username VARCHAR NOT NULL,
     secret_word_id INTEGER NOT NULL,
     state INTEGER DEFAULT 0,
     guess_remaining INTEGER DEFAULT 6,
