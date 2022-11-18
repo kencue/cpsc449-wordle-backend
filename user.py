@@ -17,11 +17,7 @@ ALGORITHM = "pbkdf2_sha256"
 
 # Initialize the app
 app = Quart(__name__)
-QuartSchema(app, tags=[{"name": "Users", "description": "APIs for creating a user and authenticating a user"},
-                       {"name": "Games", "description": "APIs for creating a game and playing a game for a particular "
-                                                        "user"},
-                       {"name": "Statistics", "description": "APIs for checking user statistics"},
-                       {"name": "Root", "description": "Root path returning html"}])
+QuartSchema(app, tags=[{"name": "Users", "description": "APIs for creating a user and authenticating a user"} ])
 app.config.from_file(f"./etc/wordle.toml", toml.load)
 
 
@@ -52,18 +48,6 @@ async def close_connection(exception):
     db = getattr(g, "_sqlite_db", None)
     if db is not None:
         await db.disconnect()
-
-
-@tag(["Root"])
-@app.route("/", methods=["GET"])
-async def index():
-    """ Root path, returns HTML """
-    return textwrap.dedent(
-        """
-        <h1>Wordle Game</h1>
-        <p>To play the game, login or create an account.</p>\n
-        """
-    )
 
 
 @tag(["Users"])

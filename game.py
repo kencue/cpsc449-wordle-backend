@@ -17,7 +17,7 @@ app = Quart(__name__)
 QuartSchema(app, tags=[
                        {"name": "Games", "description": "APIs for creating a game and playing a game for a particular "
                                                         "user"},
-                       {"name": "Statistics", "description": "APIs for checking user statistics"},
+                       {"name": "Statistics", "description": "APIs for checking game statistics for a user"},
                        {"name": "Root", "description": "Root path returning html"}])
 app.config.from_file(f"./etc/wordle.toml", toml.load)
 
@@ -43,6 +43,7 @@ async def close_connection(exception):
     if db is not None:
         await db.disconnect()
 
+
 @tag(["Root"])
 @app.route("/", methods=["GET"])
 async def index():
@@ -50,7 +51,7 @@ async def index():
     return textwrap.dedent(
         """
         <h1>Wordle Game</h1>
-        <p>To use the games api, login first.</p>\n
+        <p>To play wordle, go to the <a href="http://tuffix-vm/docs">Games Docs</a></p>\n
         """
     )
 
