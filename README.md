@@ -32,12 +32,19 @@ Tuffix 2020 (Linux)
 
 ### VHost Setup
 1. Make sure that nginx is running in the background
-2. Copy the VHost file in `/share` to `/etc/nginx/sites-enabled` then restart nginx 
+```
+$ sudo service nginx status
+```
+2. Verify that `tuffix-vm` is in `/etc/hosts`
+```
+$ cat /etc/hosts
+```
+__Note:__ This project uses the hostname `tuffix-vm`. 
+3. Copy the VHost file in `/share` to `/etc/nginx/sites-enabled` then restart nginx 
 ```
 $ sudo cp share/wordle /etc/nginx/sites-enabled/wordle
 $ sudo service nginx restart
 ```
-__Note:__ This project uses the hostname `tuffix-vm`. 
 
 ### Initializing and Starting the Application
 1. Go to the project's directory
