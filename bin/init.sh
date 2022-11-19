@@ -4,6 +4,8 @@ sqlite3 ./var/user.db  < ./share/users.sql
 sqlite3 ./var/game.db ".exit"
 sqlite3 ./var/game.db  < ./share/words.sql
 # insert values in valid_words and correct_words tables from json files
-python3 ./bin/init.py
+python3 ./bin/word_init.py
 # create other tables required for storing user information and playing the wordle game
 sqlite3 ./var/game.db  < ./share/game.sql
+# ###
+python3 ./bin/game_init.py

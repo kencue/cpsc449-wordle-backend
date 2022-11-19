@@ -5,9 +5,3 @@ CREATE TABLE users (
     username VARCHAR UNIQUE,
     password VARCHAR NOT NULL
 );
-
-
-INSERT INTO users(username, password)
-values
-    ('dummy', 'abc'),
-    ('money', 'abc');
