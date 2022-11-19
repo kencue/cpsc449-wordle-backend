@@ -13,8 +13,7 @@ from quart_schema import QuartSchema, RequestSchemaValidationError, validate_req
 # Initialize the app
 app = Quart(__name__)
 QuartSchema(app, tags=[
-                       {"name": "Games", "description": "APIs for creating a game and playing a game for a particular "
-                                                        "user"},
+                       {"name": "Games", "description": "APIs for creating a game and playing a game for a particular user"},
                        {"name": "Statistics", "description": "APIs for checking game statistics for a user"},
                        {"name": "Root", "description": "Root path returning html"}])
 app.config.from_file(f"./etc/wordle.toml", toml.load)

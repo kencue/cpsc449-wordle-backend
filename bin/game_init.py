@@ -35,23 +35,40 @@ async def _get_user_db():
 async def insert_into_games_sql(username):
 
     db = await _get_game_db()
-    res = await db.fetch_one("SELECT count(*) count from correct_words")
+    res = await db.fetch_one(
+        """
+        SELECT count(*) count 
+        FROM correct_words
+        """
+    )
     length = res.count
-    print(length)
+    
     uuid1 = str(uuid.uuid4())
     
     # 1
-    await db.execute("INSERT INTO games(game_id, username, secret_word_id) VALUES(:uuid, :users, :secret_word_id) "
-                               , values={"uuid": uuid1, "users": username, "secret_word_id": random.randint(1, length)})
+    await db.execute(
+        """
+        INSERT INTO games(game_id, username, secret_word_id)
+        VALUES(:uuid, :users, :secret_word_id)
+        """, 
+        values={"uuid": uuid1, "users": username, "secret_word_id": random.randint(1, length)}
+    )
 
-    res = await db.fetch_one("SELECT count(*) count from valid_words")
+    res = await db.fetch_one(
+        """
+        SELECT count(*) count
+        FROM valid_words
+        """
+    )
     length = res.count
-    print(length)
 
-    await db.execute('INSERT INTO guesses(game_id, valid_word_id, guess_number) '
-                             'VALUES(:game_id, :valid_word_id, :guess_number)'
-                             ,
-                             values={"game_id": uuid1, "valid_word_id": random.randint(1, length), "guess_number": 1})
+    await db.execute(
+        """
+        INSERT INTO guesses(game_id, valid_word_id, guess_number)
+        VALUES(:game_id, :valid_word_id, :guess_number)
+        """,
+        values={"game_id": uuid1, "valid_word_id": random.randint(1, length), "guess_number": 1}
+    )
 
 # insert into queries user table
 async def insert_into_users_sql(username):
@@ -66,7 +83,7 @@ async def insert_into_users_sql(username):
     # Insert into database
     await db.execute(
         """
-            INSERT INTO users(username, password) values (:username, :password)
+        INSERT INTO users(username, password) values (:username, :password)
         """,
         user
     )
