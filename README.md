@@ -1,11 +1,14 @@
-# CPSC 449 Project 1 Objective
-- Develop back-end REST APIs for a game similar to Wordle.
+# CPSC 449 Project 2 
+This project involves extending the mock Wordle backend application from Project 1 to include the following objectives:
+- Splitting monolithic code to separate functional services
+- Implementing a better authentication endpoint
+- Setting up the API gatheway with reverse proxy and load balancing
 
 ## Project Members
-- Abhishek Nagesh Shinde
-- Parva Parikh
-- Jayraj Arora
 - Brent Pfefferle
+- Divyansh Mohan Rao
+- Jayraj Arora
+- Ken Cue
 
 ## Development Environment
 - Tuffix 2020 (Linux)

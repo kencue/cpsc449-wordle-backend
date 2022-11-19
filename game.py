@@ -9,8 +9,6 @@ import toml
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request, tag
 
-# Encryption type.
-ALGORITHM = "pbkdf2_sha256"
 
 # Initialize the app
 app = Quart(__name__)
@@ -64,13 +62,21 @@ async def create_game():
     username = request.authorization.username
 
     # Open a file and load json from it
-    res = await db.fetch_one("SELECT count(*) count from correct_words")
+    res = await db.fetch_one(
+        """
+        SELECT count(*) count FROM correct_words
+        """
+    )
     length = res.count
     uuid1 = str(uuid.uuid4())
     print(uuid1)
-    game_id = await db.execute("INSERT INTO games(game_id, username, secret_word_id) VALUES(:uuid, :user, "
-                               ":secret_word_id) "
-                               , values={"uuid": uuid1, "user": username, "secret_word_id": random.randint(1, length)})
+    game_id = await db.execute(
+        """
+        INSERT INTO games(game_id, username, secret_word_id) 
+        VALUES(:uuid, :user, :secret_word_id) 
+        """, 
+        values={"uuid": uuid1, "user": username, "secret_word_id": random.randint(1, length)}
+    )
 
     return {"game_id": uuid1, "message": "Game Successfully Created"}, 200
 
@@ -106,8 +112,14 @@ async def get_in_progress_games():
     username = request.authorization.username
 
     # showing only in-progress games
-    games_output = await db.fetch_all("SELECT guess_remaining,game_id, state FROM games where username =:username "
-                                      "and state = :state ", values={"username": username, "state": 0})
+    games_output = await db.fetch_all(
+        """
+        SELECT guess_remaining, game_id, state 
+        FROM games 
+        WHERE username =:username AND state = :state 
+        """, 
+        values={"username": username, "state": 0}
+    )
 
     in_progress_games = []
     for guess_remaining, game_id, state in games_output:
@@ -126,8 +138,15 @@ async def statistics():
     db = await _get_db()
     username = request.authorization.username
 
-    res_games = await db.fetch_all("SELECT state, count(*) from games where username=:username GROUP BY state",
-                                   values={"username": username})
+    res_games = await db.fetch_all(
+        """
+        SELECT state, count(*)
+        FROM games 
+        WHERE username=:username 
+        GROUP BY state
+        """,
+        values={"username": username}
+    )
     states = {0: 'In Progress', 1: 'Win', 2: "Loss"}
     games_stats = {}
     for state, count in res_games:
@@ -136,36 +155,16 @@ async def statistics():
     return games_stats
 
 
-# Error status: Client error.
-@app.errorhandler(RequestSchemaValidationError)
-def bad_request(e):
-    return {"error": str(e.validation_error)}, 400
-
-
-# Error status: Cannot process request.
-@app.errorhandler(409)
-def conflict(e):
-    return {"error": str(e)}, 409
-
-
-# Error status: Unauthorized client.
-@app.errorhandler(401)
-def unauthorized(e):
-    return {}, 401, {"WWW-Authenticate": "Basic realm='Wordle Site'"}
-
-
-# Error status: Cannot or will not process the request.
-@app.errorhandler(400)
-def bad_request(e):
-    return jsonify({'message': e.description}), 400
-
-
 async def play_game_or_check_progress(db, username, game_id, guess=None):
     states = {0: 'In Progress', 1: 'Win', 2: "Loss"}
-    games_output = await db.fetch_one("SELECT correct_words.correct_word secret_word, guess_remaining, state "
-                                      "FROM games join correct_words WHERE username=:username "
-                                      "AND game_id=:game_id AND correct_words.correct_word_id=games.secret_word_id",
-                                      values={"game_id": game_id, "username": username})
+    games_output = await db.fetch_one(
+        """
+        SELECT correct_words.correct_word secret_word, guess_remaining, state 
+        FROM games join correct_words WHERE username=:username 
+        AND game_id=:game_id AND correct_words.correct_word_id=games.secret_word_id
+        """,
+        values={"game_id": game_id, "username": username}
+    )
 
     if not games_output:
         abort(400, "No game with this identifier for your username")
@@ -185,8 +184,14 @@ async def play_game_or_check_progress(db, username, game_id, guess=None):
         if guess == secret_word:
             state = 1
 
-        valid_word_output = await db.fetch_one("SELECT valid_word_id from valid_words WHERE valid_word =:word",
-                                               values={"word": guess})
+        valid_word_output = await db.fetch_one(
+            """
+            SELECT valid_word_id
+            FROM valid_words 
+            WHERE valid_word =:word
+            """,
+            values={"word": guess}
+        )
         if not valid_word_output:
             if not state:
                 abort(400, "Bad Request: Not a valid guess")
@@ -199,26 +204,45 @@ async def play_game_or_check_progress(db, username, game_id, guess=None):
             # user lost the game
             if guess_remaining == 0 and state == 0:
                 state = 2
-            await db.execute("UPDATE games set guess_remaining=:guess_remaining,state=:state  "
-                             "where game_id=:game_id",
-                             values={"guess_remaining": guess_remaining, "game_id": game_id, "state": state})
+            await db.execute(
+                """
+                UPDATE games 
+                SET guess_remaining=:guess_remaining, state=:state
+                WHERE game_id=:game_id
+                """,
+                values={"guess_remaining": guess_remaining, "game_id": game_id, "state": state}
+            )
             return {"game_id": game_id, "number_of_guesses": 6 - guess_remaining, "decision": states[state]}, 200
         else:
-            await db.execute("UPDATE games set guess_remaining=:guess_remaining where game_id=:game_id",
-                             values={"guess_remaining": guess_remaining, "game_id": game_id})
+            await db.execute(
+                """
+                UPDATE games
+                SET guess_remaining=:guess_remaining
+                WHERE game_id=:game_id
+                """,
+                values={"guess_remaining": guess_remaining, "game_id": game_id}
+                )
 
             guess_number = 6 - guess_remaining
             valid_word_id = valid_word_output.valid_word_id
-            await db.execute('INSERT INTO guesses(game_id, valid_word_id, guess_number) '
-                             'VALUES(:game_id, :valid_word_id, :guess_number)'
-                             ,
-                             values={"game_id": game_id, "valid_word_id": valid_word_id, "guess_number": guess_number})
+            await db.execute(
+                """
+                INSERT INTO guesses(game_id, valid_word_id, guess_number)
+                VALUES(:game_id, :valid_word_id, :guess_number)
+                """,
+                values={"game_id": game_id, "valid_word_id": valid_word_id, "guess_number": guess_number}
+            )
     # Prepare the response
-    guess_output = await db.fetch_all("SELECT guess_number, valid_words.valid_word from guesses join "
-                                      "valid_words where game_id=:game_id "
-                                      "and valid_words.valid_word_id=guesses.valid_word_id "
-                                      " order by guess_number",
-                                      values={"game_id": game_id})
+    guess_output = await db.fetch_all(
+        """
+        SELECT guess_number, valid_words.valid_word 
+        FROM guesses 
+        JOIN valid_words 
+        WHERE game_id=:game_id AND valid_words.valid_word_id=guesses.valid_word_id
+        ORDER BY guess_number
+        """,
+        values={"game_id": game_id}
+    )
     guesses = []
     for guess_number, valid_word in guess_output:
         correct_positions, incorrect_positions = compare(secret_word, valid_word)

@@ -28,11 +28,6 @@ class User:
     password: str
 
 
-@dataclasses.dataclass
-class Word:
-    guess: str
-
-
 # Establish database connection
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
@@ -63,9 +58,10 @@ async def create_user(data):
     try:
         await db.execute(
             """
-                INSERT INTO users(username, password) values (:username, :password)
+            INSERT INTO users(username, password) 
+            VALUES (:username, :password)
             """,
-            user
+            values=user
         )
     # Error
     except sqlite3.IntegrityError as e:
@@ -86,8 +82,14 @@ async def login():
 
 async def check_user(db, auth):
     if auth is not None and auth.type == 'basic':
-        user_info = await db.fetch_one("SELECT password FROM users where username = :username",
-                                       values={"username": auth.username})
+        user_info = await db.fetch_one(
+            """
+            SELECT password 
+            FROM users
+            WHERE username = :username
+            """,
+            values={"username": auth.username}
+        )
         if user_info:
             if verify_password(auth.password, user_info["password"]):
                 return True
