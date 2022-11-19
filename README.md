@@ -37,7 +37,7 @@ Tuffix 2020 (Linux)
 $ sudo cp share/wordle /etc/nginx/sites-enabled/wordle
 $ sudo service nginx restart
 ```
-3. This project uses the hostname `http://tuffix-vm/`. If you have not configured this to run, please refer to [Exercise 2](https://docs.google.com/document/d/1-tFBfCP2rhk5YFtXYpGD894Ghy4UY-J3o9Zs7abbS8c/edit) and follow the instruction on Step 1 to set it up.
+__Note:__ This project uses the hostname `tuffix-vm`. 
 
 ### Initializing and Starting the Application
 1. Go to the project's directory
