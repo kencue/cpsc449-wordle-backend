@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.8
 # Imports
 import dataclasses
 import random
@@ -18,9 +17,11 @@ QuartSchema(app, tags=[
                        {"name": "Root", "description": "Root path returning html"}])
 app.config.from_file(f"./etc/wordle.toml", toml.load)
 
+
 @dataclasses.dataclass
 class Word:
     guess: str
+
 
 # Establish database connection
 async def _get_db():
@@ -29,6 +30,7 @@ async def _get_db():
         db = g._sqlite_db = databases.Database(app.config["DATABASES"]["GAME_URL"])
         await db.connect()
     return db
+
 
 # Terminate database connection
 @app.teardown_appcontext
@@ -48,6 +50,7 @@ async def index():
         <p>To play wordle, go to the <a href="http://tuffix-vm/docs">Games Docs</a></p>\n
         """
     )
+
 
 @tag(["Games"])
 @app.route("/games", methods=["POST"])
@@ -75,6 +78,7 @@ async def create_game():
 
     return {"game_id": uuid1, "message": "Game Successfully Created"}, 200
 
+
 @validate_request(Word)
 @tag(["Games"])
 @app.route("/games/<string:game_id>", methods=["POST"])
@@ -87,6 +91,7 @@ async def play_game(game_id):
 
     return await play_game_or_check_progress(db, username, game_id, data["guess"])
 
+
 @tag(["Games"])
 @app.route("/games/<string:game_id>", methods=["GET"])
 async def check_game_progress(game_id):
@@ -95,6 +100,7 @@ async def check_game_progress(game_id):
     username = request.authorization.username
 
     return await play_game_or_check_progress(db, username, game_id)
+
 
 @tag(["Statistics"])
 @app.route("/games", methods=["GET"])
@@ -121,6 +127,7 @@ async def get_in_progress_games():
         })
 
     return in_progress_games
+
 
 @tag(["Statistics"])
 @app.route("/games/statistics", methods=["GET"])
@@ -248,6 +255,7 @@ async def play_game_or_check_progress(db, username, game_id, guess=None):
 
     return {"guesses": guesses, "guess_remaining": guess_remaining, "game_state": states[state]}, 200
 
+
 # Function to compare the guess to answer.
 def compare(secret_word, guess):
     secret_word_lst = [i for i in enumerate(secret_word)]
@@ -274,20 +282,24 @@ def compare(secret_word, guess):
 
     return correct_positions, incorrect_positions
 
+
 # Error status: Client error.
 @app.errorhandler(RequestSchemaValidationError)
 def bad_request(e):
     return {"error": str(e.validation_error)}, 400
+
 
 # Error status: Cannot process request.
 @app.errorhandler(409)
 def conflict(e):
     return {"error": str(e)}, 409
 
+
 # Error status: Unauthorized client.
 @app.errorhandler(401)
 def unauthorized(e):
     return {}, 401, {"WWW-Authenticate": "Basic realm='Wordle Site'"}
+
 
 # Error status: Cannot or will not process the request.
 @app.errorhandler(400)

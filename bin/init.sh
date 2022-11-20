@@ -9,7 +9,7 @@ sqlite3 ./var/game.db  < ./share/words.sql
 python3 ./bin/word_init.py
 
 # create other tables required for storing user information and playing the wordle game
-sqlite3 ./var/game.db  < ./share/game.sql
+sqlite3 ./var/game.db  < ./share/games.sql
 
 # populate the user and games table with dummy values
-python3 ./bin/game_init.py
+python3 ./bin/game_and_user_init.py

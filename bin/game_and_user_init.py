@@ -1,6 +1,5 @@
 # Imports
 import random
-import json
 import asyncio
 import databases
 import toml
@@ -19,11 +18,13 @@ app = Quart(__name__)
 QuartSchema(app)
 app.config.from_file(f"../etc/wordle.toml", toml.load)
 
+
 # Establish database connection.
 async def _get_game_db():
     db = databases.Database(app.config["DATABASES"]["GAME_URL"])
     await db.connect()
     return db
+
 
 # Establish database connection.
 async def _get_user_db():
@@ -31,8 +32,10 @@ async def _get_user_db():
     await db.connect()
     return db
 
+
 # insert into query for games and guesses table
 async def insert_into_games_sql(username):
+    print("Loading data into games table")
 
     db = await _get_game_db()
     res = await db.fetch_one(
@@ -70,14 +73,13 @@ async def insert_into_games_sql(username):
         values={"game_id": uuid1, "valid_word_id": random.randint(1, length), "guess_number": 1}
     )
 
+
 # insert into queries user table
 async def insert_into_users_sql(username):
-
+    print("Loading data into users table")
     db = await _get_user_db()
 
-    user = {}
-    user["username"] = username
-    user["password"] = "abc"
+    user = {"username": username, "password": "abc"}
     user["password"] = hash_password(user["password"])
     
     # Insert into database
@@ -88,6 +90,7 @@ async def insert_into_users_sql(username):
         user
     )
 
+
 # Hash a given password using pbkdf2.
 def hash_password(password, salt=None, iterations=260000):
     if salt is None:
@@ -97,6 +100,7 @@ def hash_password(password, salt=None, iterations=260000):
     pw_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
     b64_hash = base64.b64encode(pw_hash).decode("ascii").strip()
     return "{}${}${}${}".format(ALGORITHM, iterations, salt, b64_hash)
+
 
 # Run when executed as script.
 if __name__ == "__main__":

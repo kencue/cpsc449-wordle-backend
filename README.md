@@ -1,8 +1,8 @@
 # CPSC 449 Project 2 
 [Project 2](https://docs.google.com/document/d/1BXrmgSclvifgYWItGxxhZ72BrmiD5evXoRbA_uRP_jM/edit#) involves extending the mock Wordle backend application from [Project 1](https://docs.google.com/document/d/14YzD8w5SpJk0DqizgrgyOsXvQ2-rrd-39RUSe2GNvz4/edit) to include the following objectives:
 - Splitting monolithic code to separate functional services
-- Implementing a better authentication endpoint
-- Setting up the API gatheway with reverse proxy and load balancing
+- Implementing nginx authentication to authenticate endpoints
+- Setting up the API gateway with reverse proxy and load balancing
 
 This project also builds upon concepts introduced in [Exercise 2](https://docs.google.com/document/d/1-tFBfCP2rhk5YFtXYpGD894Ghy4UY-J3o9Zs7abbS8c/edit) and [Exercise 3](https://docs.google.com/document/d/14i8cpm7z1oFh5y5gmAkQ39AH3Pu8oWRr6B6TOziGYhY/edit) with regards to setting up Nginx server and building indices.
 
