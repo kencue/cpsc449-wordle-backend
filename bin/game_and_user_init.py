@@ -107,11 +107,13 @@ if __name__ == "__main__":
     user1 = 'dummy'
     user2 = 'money'
     
+    print("Loading data into users table")
     asyncio.run(insert_into_users_sql(user1))
-    asyncio.run(insert_into_games_sql(user1))
-    asyncio.run(insert_into_games_sql(user1))
-
     asyncio.run(insert_into_users_sql(user2))
+
+    print("Loading data into games table")
+    asyncio.run(insert_into_games_sql(user1))
+    asyncio.run(insert_into_games_sql(user1))
     asyncio.run(insert_into_games_sql(user2))
     asyncio.run(insert_into_games_sql(user2))
 
