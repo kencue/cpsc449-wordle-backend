@@ -1,3 +1,3 @@
 [DATABASES]
-GAME_URL = 'sqlite+aiosqlite:///var/game.db'
+GAME_URL = 'sqlite+aiosqlite:///var/primary/mount/game.db'
 USER_URL = 'sqlite+aiosqlite:///var/user.db'

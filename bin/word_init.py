@@ -1,12 +1,10 @@
 # Imports
-import random
 import json
 import asyncio
 import databases
 import toml
 from quart import Quart
 from quart_schema import QuartSchema
-import uuid
 
 # Initialize app
 app = Quart(__name__)
