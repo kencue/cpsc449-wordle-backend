@@ -1,45 +1,36 @@
 # Imports
 import json
-import asyncio
-import databases
-import toml
-from quart import Quart
-from quart_schema import QuartSchema
+import sqlite3
 
-# Initialize app
-app = Quart(__name__)
-QuartSchema(app)
-app.config.from_file(f"../etc/wordle.toml", toml.load)
 
-# Load json from file and convert unicode to string.
-def load_json_from_file(file_name):
-    f = open(file_name)
-    data = json.load(f)
-    values = []
-    # converting unicode to string values
-    for item in data:
-        values.append(str(item))
-    return values
+def populate_words(cur: sqlite3.Cursor):
 
-# Establish database connection.
-async def _get_db():
-    db = databases.Database(app.config["DATABASES"]["GAME_URL"])
-    await db.connect()
-    return db
+    # Make sure tables are empty first
+    cur.execute("DELETE from correct_words")
+    cur.execute("DELETE from valid_words")
 
-# Populate valid and correct words into database.
-async def load_data(file_name, table_name):
-    data = load_json_from_file(file_name)
-    words = []
-    for item in data:
-        words.append({"word": item})
+    with open("./share/correct.json") as file:
+        correctWordList = json.load(file)
 
-    print("Loading data into " + table_name + " table, please wait...")
-    db = await _get_db()
-    await db.execute_many("INSERT into " + table_name + "(" + table_name[:-1] + ") values(:word)", words)
+    with open("./share/valid.json") as file:
+        validWordList = json.load(file)
 
-# Run when executed as script.
+
+    correctWordList = [(word,) for word in correctWordList]
+    validWordList = [(word,) for word in validWordList]
+
+    cur.executemany("INSERT INTO correct_words(correct_word) values(?)", correctWordList)
+    cur.executemany("INSERT INTO valid_words(valid_word) values(?)", validWordList)
+    return len(correctWordList) + len(validWordList)
+
+
+
+
 if __name__ == "__main__":
-    asyncio.run(load_data('./share/correct.json', 'correct_words'))
-    asyncio.run(load_data('./share/valid.json', 'valid_words'))
-    print("Loading of tables complete")
+    connection = sqlite3.connect("./var/primary/mount/game.db")
+    cursor = connection.cursor()
+
+
+    count = populate_words(cursor)
+    connection.commit()
+    print(f"Successfully inserted {count} words")
