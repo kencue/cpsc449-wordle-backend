@@ -6,42 +6,60 @@ import redis
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request, tag
 
-# Encryption type.
-ALGORITHM = "pbkdf2_sha256"
 
 # Initialize the app
 app = Quart(__name__)
-QuartSchema(app, tags=[{"name": "LeaderBoard", "description": "LeaderBoard for User Scores"}
-                       {"name": "Root", "description": "Root path returning html"}])
+QuartSchema(app, tags=[{"name": "Leaderboard", "description": "Leaderboard for Wordle Scores"}])
 app.config.from_file(f"./etc/wordle.toml", toml.load)
 
 @dataclasses.dataclass
-class wordle:
+class Entry:
     game_id: str
     username: str
-    state: str
     score: int
 
-@tag(["Root"])
-@app.route("/", methods=["GET"])
-async def index():
-    """ Root path, returns HTML """
+
+@tag(["Leaderboard"])
+@app.route("/leaderboard", methods=["GET"])
+async def leaderboard():
+    """ Returns the top 10 scores """
     return textwrap.dedent(
         """
-        <h1>Wordle Game</h1>
-        <p>To play wordle, go to the <a href="http://tuffix-vm/docs">Games Docs</a></p>\n
+        TOP 10
         """
     )
 
-@app.route("/LeaderBoard", methods=["POST"])
+
 @tag(["Leaderboard"])
-@validate_request(wordle)
-async def Game_in_progress(data):
-    wordle = dataclasses.asdict(data)
-    hash_id = "game_id" + wordle["game_id"]
-    wordle_data = {"username" + wordle["username"], "state" + wordle["state"], "score" + wordle["socre"]}
+@app.route("/leaderboard/add", methods=["POST"])
+@validate_request(Entry)
+async def add_entry(data):
+    entry = dataclasses.asdict(data)
+    hash_id = "game_id" + entry["game_id"]
+    entry = {"username" + entry["username"], "score" + entry["socre"]}
+
+    return entry, 200
 
 
+# Error status: Client error.
+@app.errorhandler(RequestSchemaValidationError)
+def bad_request(e):
+    return {"error": str(e.validation_error)}, 400
 
 
-    return wordle, 200
+# Error status: Cannot process request.
+@app.errorhandler(409)
+def conflict(e):
+    return {"error": str(e)}, 409
+
+
+# Error status: Unauthorized client.
+@app.errorhandler(401)
+def unauthorized(e):
+    return {}, 401, {"WWW-Authenticate": "Basic realm='Wordle Site'"}
+
+
+# Error status: Cannot or will not process the request.
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({'message': e.description}), 400
