@@ -18,6 +18,7 @@ QuartSchema(app, tags=[
 app.config.from_file(f"./etc/wordle.toml", toml.load)
 
 replica_dbs = [
+    app.config["DATABASES"]["GAME_PRIMARY_URL"],
     app.config["DATABASES"]["GAME_SECONDARY1_URL"],
     app.config["DATABASES"]["GAME_SECONDARY2_URL"]
 ]
