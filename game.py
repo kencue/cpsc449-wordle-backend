@@ -182,8 +182,9 @@ async def play_game_or_check_progress(read_db, write_db, username, game_id, gues
     games_output = await read_db.fetch_one(
         """
         SELECT correct_words.correct_word secret_word, guess_remaining, state 
-        FROM games join correct_words WHERE username=:username 
-        AND game_id=:game_id AND correct_words.correct_word_id=games.secret_word_id
+        FROM games 
+        JOIN correct_words
+        WHERE username=:username AND game_id=:game_id AND correct_words.correct_word_id=games.secret_word_id
         """,
         values={"game_id": game_id, "username": username}
     )

@@ -1,5 +1,4 @@
 import dataclasses
-import databases
 import textwrap
 import toml
 import redis
@@ -16,29 +15,58 @@ app.config.from_file(f"./etc/wordle.toml", toml.load)
 class Entry:
     game_id: str
     username: str
-    score: int
+    is_win: bool
+    number_of_guesses: int
 
 
 @tag(["Leaderboard"])
 @app.route("/leaderboard", methods=["GET"])
 async def leaderboard():
-    """ Returns the top 10 scores """
-    return textwrap.dedent(
-        """
-        TOP 10
-        """
-    )
+    """ Returns the top 10 users based on the average of their scores """
+    r = redis.Redis()
+    res = r.zrevrange("leaderboard", 0, 9, True)
+    return jsonify(res), 200
 
 
 @tag(["Leaderboard"])
 @app.route("/leaderboard/add", methods=["POST"])
 @validate_request(Entry)
 async def add_entry(data):
-    entry = dataclasses.asdict(data)
-    hash_id = "game_id" + entry["game_id"]
-    entry = {"username" + entry["username"], "score" + entry["socre"]}
+    """
+    Reports game results by entry, recalculates the user's average, then 
+    updates the leaderboard average score.
+    We are storing entries as user: { game1: score1, game2: score2, ... }."""
+    r = redis.Redis()
 
-    return entry, 200
+    # add the game result
+    entry = dataclasses.asdict(data)
+    score = calculate_score(entry["is_win"], entry["number_of_guesses"])
+    r.hset("user:" + entry["username"], "game:" + entry["game_id"], score)
+
+    # get all the games of the user so we can calculate the average
+    games = r.hgetall("user:" + entry["username"])
+
+    mean = 0
+    for val in games.values():
+        mean += int(val)
+    
+    mean = mean / len(games)
+
+    # update the leaderboard with the mean
+    leaderboard_entry = {
+        "user:" + entry["username"] : mean
+    }
+    r.zadd("leaderboard", leaderboard_entry)
+    return "OK", 200
+
+
+def calculate_score(is_win, number_of_guesses):
+    max_guesses = 6
+    win_bonus = 0
+    if is_win:
+        win_bonus = 1
+    score = win_bonus * ((max_guesses - number_of_guesses) + win_bonus)
+    return score
 
 
 # Error status: Client error.

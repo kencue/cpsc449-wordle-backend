@@ -13,3 +13,8 @@ sqlite3 ./var/primary/mount/game.db  < ./share/games.sql
 
 # populate the user and games table with dummy values
 python3 ./bin/game_and_user_init.py
+
+# Flush the Redis Database to prep for the leaderboard db
+echo "Preparing the Leaderboard DB."
+redis-cli -n 0
+redis-cli FLUSHDB

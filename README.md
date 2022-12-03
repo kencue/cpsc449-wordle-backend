@@ -24,13 +24,13 @@ Tuffix 2020 (Linux)
 - Quart
 - Sqlite3 (== v1.4.41)
 - Foreman
-- Redis (redis-py & Hiredis)
+- Redis (including redis-py & Hiredis)
 - Databases
 - Quart-Schema
 - Curl
 - HTTPie
 
-***Important Note: Please make sure all these are installed in the system (through pip or apt-get) before setting up the project***
+***Note: Please make sure all these are installed in the system (through pip or apt-get) before setting up the project***
 
 ### VHost Setup
 1. Make sure that nginx is running in the background
@@ -41,7 +41,7 @@ $ sudo service nginx status
 ```
 $ cat /etc/hosts
 ```
-__Note:__ This project uses the hostname `tuffix-vm`. 
+***Note: This project uses the hostname `tuffix-vm`.***
 3. Copy the VHost file in `/share` to `/etc/nginx/sites-enabled` then restart nginx 
 ```
 $ sudo cp share/wordle /etc/nginx/sites-enabled/wordle
@@ -50,15 +50,25 @@ $ sudo service nginx restart
 
 ### Initializing and Starting the Application
 1. Go to the project's directory
-2. Start the app with Foreman
+2. Download the latest release of [LiteFS](https://github.com/superfly/litefs/releases), and extract the `litefs` binary into the `./bin` directory. Verify that it is installed properly by running the command below, which should return `config file not found`.
+```
+$ ./bin/litefs
+```
+3. Start the app with Foreman
 ```
 $ foreman start
 ```
-3. After making sure the app is running in the background, run the command below to initialize databases and populate them with values.
+4. After making sure the app is running in the background, run the command below to initialize databases and populate them with values.
 ```
 $ ./bin/init.sh
 ```
-***Important Note: If you run into permission issues (i.e. forbidden errors) in Step 2, run both the Foreman step and initialization step with root privilege by adding `sudo` before the command***
+***Important Note: If you run into permission issues (i.e. forbidden errors) in Step 3, run both the Foreman step and initialization step (Steps 3 & 4) with root privilege by adding `sudo` before the command***
+5. The app uses the default configuration `127.0.0.1:6379`. Make sure the port isn't used by another service and verify that Redis is running.
+```
+$ redis-cli ping
+```
+If it is not returning `PONG`, check if Redis was properly installed/configured.
+
 
 ## REST API Features
 - Register a user (includes password hashing)
