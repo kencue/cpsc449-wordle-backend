@@ -4,7 +4,7 @@ __pycache__/
 # Databases and litefs files
 *.db
 data/dbs/
-data/id/
+data/id
 
 
 
