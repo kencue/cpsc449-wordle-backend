@@ -1,3 +1,7 @@
 [DATABASES]
 GAME_URL = 'sqlite+aiosqlite:///var/primary/mount/game.db'
 USER_URL = 'sqlite+aiosqlite:///var/user.db'
+
+GAME_PRIMARY_URL = 'sqlite+aiosqlite:///var/primary/mount/game.db'
+GAME_SECONDARY1_URL = 'sqlite+aiosqlite:///var/secondary1/mount/game.db'
+GAME_SECONDARY2_URL = 'sqlite+aiosqlite:///var/secondary2/mount/game.db'

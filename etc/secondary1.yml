@@ -10,7 +10,6 @@ http:
   # Specifies the bind address of the HTTP API server.
   addr: ":20203"
 
-
 static:
   # Specifies that the current node is the primary.
   primary: false 
