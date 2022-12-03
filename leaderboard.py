@@ -1,5 +1,4 @@
 import dataclasses
-import textwrap
 import toml
 import redis
 from quart import Quart, g, request, abort, jsonify
