@@ -28,7 +28,7 @@ async def leaderboard():
 
 
 @tag(["Leaderboard"])
-@app.route("/leaderboard/add", methods=["POST"])
+@app.route("/add-leaderboard-entry", methods=["POST"])
 @validate_request(Entry)
 async def add_entry(data):
     """
