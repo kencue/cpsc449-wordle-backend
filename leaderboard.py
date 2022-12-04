@@ -19,7 +19,7 @@ class Entry:
 
 
 @tag(["Leaderboard"])
-@app.route("/leaderboard", methods=["GET"])
+@app.route("/leaderboard/top10", methods=["GET"])
 async def leaderboard():
     """ Returns the top 10 users based on the average of their scores """
     r = redis.Redis()
@@ -28,7 +28,7 @@ async def leaderboard():
 
 
 @tag(["Leaderboard"])
-@app.route("/add-leaderboard-entry", methods=["POST"])
+@app.route("/leaderboard/add", methods=["POST"])
 @validate_request(Entry)
 async def add_entry(data):
     """
