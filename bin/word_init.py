@@ -19,8 +19,12 @@ def populate_words(cur: sqlite3.Cursor):
     correctWordList = [(word,) for word in correctWordList]
     validWordList = [(word,) for word in validWordList]
 
+    # Simple fix for not allowing correct words to be guessed
+    validWordList.extend(correctWordList)
+
     cur.executemany("INSERT INTO correct_words(correct_word) values(?)", correctWordList)
     cur.executemany("INSERT INTO valid_words(valid_word) values(?)", validWordList)
+    
     return len(correctWordList) + len(validWordList)
 
 
