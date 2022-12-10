@@ -1,3 +1,11 @@
-/var/game.db
-/var/user.db
+# Python 
 __pycache__/
+
+# Databases and litefs files
+*.db
+var/*/data/dbs/
+var/*/data/id
+
+
+
+bin/litefs
