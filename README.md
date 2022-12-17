@@ -1,19 +1,22 @@
-# CPSC 449 Project 3
-[Project 3](https://docs.google.com/document/d/1OWltxCFRsd2s4khOdfwKLZ3vqF6dsJ087nyMn0klcQs/edit) involves extending the mock Wordle backend application from [Project 1](https://docs.google.com/document/d/14YzD8w5SpJk0DqizgrgyOsXvQ2-rrd-39RUSe2GNvz4/edit) and [Project 2](https://docs.google.com/document/d/1BXrmgSclvifgYWItGxxhZ72BrmiD5evXoRbA_uRP_jM/edit#) to include the following objectives:
-- Adding replica databases for the games service while maintaining load balancing
-- Adding a leaderboard service that uses a different database system (i.e. Redis)
+# CPSC 449 Project 4
+[Project 4](https://docs.google.com/document/d/19BqaDN9M9fMfw6WjwISGDauF_I2w20UJ4lNmW9USbn0/edit) builds upon the previous project by adding a connection between the games and leaderboard service through webhooks. Some of the solutions presented here have been touched upon in [Exercise 4](https://docs.google.com/document/d/1GeF5txkEb3Jl0_YtnFKFh21xiDff1IJ54XC9Qydk3GE/edit).
 
-This project also builds upon concepts introduced in [Exercise 2](https://docs.google.com/document/d/1-tFBfCP2rhk5YFtXYpGD894Ghy4UY-J3o9Zs7abbS8c/edit) and [Exercise 3](https://docs.google.com/document/d/14i8cpm7z1oFh5y5gmAkQ39AH3Pu8oWRr6B6TOziGYhY/edit) with regards to configuring the replicas and using Redis in Python.
+All of the concepts presented here were taken from the [Fall 2022 CPSC 449 Course](https://sites.google.com/view/cpsc-449).
 
+### Links to Previous Projects & Exercises Prompts
+- [Project 1](https://docs.google.com/document/d/14YzD8w5SpJk0DqizgrgyOsXvQ2-rrd-39RUSe2GNvz4/edit)
+- [Project 2](https://docs.google.com/document/d/1BXrmgSclvifgYWItGxxhZ72BrmiD5evXoRbA_uRP_jM/edit)
+- [Project 3](https://docs.google.com/document/d/1OWltxCFRsd2s4khOdfwKLZ3vqF6dsJ087nyMn0klcQs/edit)
+- [Exercise 2](https://docs.google.com/document/d/1-tFBfCP2rhk5YFtXYpGD894Ghy4UY-J3o9Zs7abbS8c/edit)
+- [Exercise 3](https://docs.google.com/document/d/14i8cpm7z1oFh5y5gmAkQ39AH3Pu8oWRr6B6TOziGYhY/edit)
 
 ### Authors
 Section 02
-Group 20
+Group 13
 Members:
 - Abhishek Nagesh Shinde
-- Alejandro Ramos Jr
 - Ken Cue
-- Michael Morikawa
+- Yash Gandhi
 
 
 ## Setting Up
@@ -32,6 +35,7 @@ Tuffix 2020 (Linux)
 - Quart-Schema
 - Curl
 - HTTPie
+- HTTPX
 
 ***Note: Please make sure all these are installed in the system (through pip or apt-get) before setting up the project***
 
@@ -63,7 +67,7 @@ $ sudo service nginx restart
 ```
 $ ./bin/litefs
 ```
-***Note: the LiteFS releases includes pre-released beta versions. We recommend you scroll down to find the actual release versions.
+***Note: the LiteFS releases includes pre-released beta versions. We recommend you scroll down to find the actual release versions.***
 
 3. Start the app with Foreman
 ```
@@ -93,6 +97,7 @@ If it is not returning `PONG`, check if Redis was properly installed/configured.
 - Check the statistics for a particular user
 - Display the top 10 scores in the leaderboard (public-facing, no authentication needed)
 - Report score to the leaderboard
+- Adding a webhook for games service to report game statistics to
 
 
 ## Running the Application

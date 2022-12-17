@@ -6,6 +6,7 @@ import uuid
 import databases
 import toml
 import itertools
+import sqlite3
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import (
     QuartSchema,
@@ -24,11 +25,15 @@ QuartSchema(
     tags=[
         {
             "name": "Games",
-            "description": "APIs for creating a game and playing a game for a particular user",
+            "description": "API for creating a game and playing a game for a particular user",
         },
         {
             "name": "Statistics",
-            "description": "APIs for checking game statistics for a user",
+            "description": "API for checking game statistics for a user",
+        },
+        {
+            "name": "Webhooks",
+            "description": "API for establishing callback URLs the service to send game information to",
         },
         {"name": "Root", "description": "Root path returning html"},
     ],
@@ -46,6 +51,11 @@ replica_db_buffer = itertools.cycle(replica_dbs)
 @dataclasses.dataclass
 class Word:
     guess: str
+
+
+@dataclasses.dataclass
+class Webhook:
+    callback_url: str
 
 
 # Establish database connection
@@ -375,12 +385,32 @@ async def get_guesses(game_id, secret_word):
         )
     return guesses
 
-@app.route("/games/urlregisteration", methods=["POST"])
-async def register():
-    data = request.get_json()
-    url = data['url']
-    print(url)
-#register url in database creating new table in game db
+
+@validate_request(Webhook)
+@tag(["Webhooks"])
+@app.route("/webhooks/register", methods=["POST"])
+async def register_webhook():
+    """Register callback URL where win/loss information will be sent"""
+    data = await request.json
+    url = data['callback_url']
+    
+    # register url to the database
+    write_db = await _get_db()
+
+    try:
+        url_id = await write_db.execute(
+            """
+            INSERT INTO webhooks(callback_url) 
+            VALUES(:url) 
+            """,
+            values={
+                "url": url
+            },
+        )
+        return {"url_id": url_id, "url": url, "message": "Webhook callback URL successfully registered"}, 200
+    except sqlite3.IntegrityError:
+        return {"message": "URL already exists. Please pass a different URL."}, 400
+
 
 # Error status: Client error.
 @app.errorhandler(RequestSchemaValidationError)

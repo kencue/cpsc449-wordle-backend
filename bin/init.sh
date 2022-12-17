@@ -16,5 +16,4 @@ python3 ./bin/game_and_user_init.py
 
 # Flush the Redis Database to prep for the leaderboard db
 echo "Preparing the Leaderboard DB."
-redis-cli -n 0
-redis-cli FLUSHDB
+redis-cli -n 0 FLUSHDB
