@@ -87,6 +87,30 @@ $ redis-cli ping
 ```
 If it is not returning `PONG`, check if Redis was properly installed/configured.
 
+### Retrying Failed jobs
+***About Cron - Cron is a daemon that runs scheduled tasks (also known as "cron jobs") at predetermined times. These tasks are specified in the configuration file called the crontab, which can be edited by the user to schedule tasks to run automatically.***
+
+Each line in the crontab file represents a specific task and follows a specific syntax:
+
+You can find the crontab file under 
+`/Project4/branch/cpsc449-wordle-backend/crontab.txt`
+
+```
+$ */10 * * * * run-one rq requeue --all --queue default
+```
+Here astrisks represents The asterisks represent the following elements:
+    Minute (0-59)
+    Hour (0-23)
+    Day of the month (1-31)
+    Month (1-12)
+    Day of the week (0-6, with 0 representing Sunday)
+
+Run 
+```
+$ */10 * * * * run-one rq requeue --all --queue default
+```
+to retry the failed running jobs "Redis Queue (rq)" to requeue and retry them and run after 10 minutes (represented in first astrisk as "10")
+
 
 ## REST API Features
 - Register a user (includes password hashing)
