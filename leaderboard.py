@@ -1,6 +1,9 @@
 import dataclasses
 import toml
 import redis
+import os
+import socket
+import httpx
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request, tag
 
@@ -90,3 +93,11 @@ def unauthorized(e):
 @app.errorhandler(400)
 def bad_request(e):
     return jsonify({'message': e.description}), 400
+
+def url_registeration():
+    url = "http://" + socket.gethostbyname(socket.getfqdn(""))+":"+ os.environ['PORT'] + "/leaderboard/add"
+    print(url)
+    data = {"url" :url }
+    response = httpx.post("http://tuffix-vm/games/urlregisteration",json = data)
+
+url_registeration()
