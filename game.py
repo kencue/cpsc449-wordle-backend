@@ -375,6 +375,12 @@ async def get_guesses(game_id, secret_word):
         )
     return guesses
 
+@app.route("/games/urlregisteration", methods=["POST"])
+async def register():
+    data = request.get_json()
+    url = data['url']
+    print(url)
+#register url in database creating new table in game db
 
 # Error status: Client error.
 @app.errorhandler(RequestSchemaValidationError)
