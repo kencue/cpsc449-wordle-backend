@@ -6,3 +6,4 @@ game_s3: ./bin/litefs -config ./etc/secondary2.yml
 
 leaderboard: hypercorn leaderboard --reload --debug --bind wordle.local.gd:$PORT --access-logfile - --error-logfile - --log-level DEBUG
 
+worker: python3 -u run-worker.py

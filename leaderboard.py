@@ -18,7 +18,7 @@ app.config.from_file(f"./etc/wordle.toml", toml.load)
 keep_retrying = True
 while (keep_retrying):
     try:
-        callback_url = "http://" + socket.gethostbyname(socket.getfqdn(""))+":"+ os.environ['PORT'] + "/leaderboard/add"
+        callback_url = "http://" + socket.gethostbyname(socket.getfqdn("wordle.local.gd"))+":"+ os.environ['PORT'] + "/leaderboard/add"
         data = {"callback_url": callback_url}
         response = httpx.post("http://tuffix-vm/webhooks/register", json=data)
         if (int(response.status_code) > 500):

@@ -35,6 +35,7 @@ Tuffix 2020 (Linux)
 - Quart-Schema
 - Curl
 - HTTPie
+- RQ
 - HTTPX
 
 ***Note: Please make sure all these are installed in the system (through pip or apt-get) before setting up the project***
@@ -153,3 +154,7 @@ http GET http://tuffix-vm/leaderboard/top10
 http POST http://127.0.0.1:5400/leaderboard/add game_id=<game_id> is_win=<true/false> number_of_guesses=<num_guesses> username=<username>
 ```
 _Note: this accesses the leaderboard service directly at `127.0.0.1:5400` and not through Nginx as this endpoint will not be visible to the public_
+- Adding a webhook for games service to report game statistics to
+```
+http POST http://tuffix-vm/webhooks/register callback_url=<url>
+```

@@ -7,6 +7,13 @@ import databases
 import toml
 import itertools
 import sqlite3
+import httpx
+
+from redis import Redis
+from rq import Queue
+from rq.job import Job
+from rq.registry import FailedJobRegistry
+
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import (
     QuartSchema,
@@ -119,7 +126,7 @@ async def create_game():
     uuid1 = str(uuid.uuid4())
 
     db = await _get_db()
-    game_id = await db.execute(
+    await db.execute(
         """
         INSERT INTO games(game_id, username, secret_word_id) 
         VALUES(:uuid, :user, :secret_word_id) 
@@ -184,7 +191,7 @@ async def play_game(game_id):
 
         await write_db.execute(
             """
-            UPDATE games 
+            UPDATE games
             SET guess_remaining=:guess_remaining, state=:state
             WHERE game_id=:game_id
             """,
@@ -194,6 +201,19 @@ async def play_game(game_id):
                 "state": state,
             },
         )
+        
+        # report results to all urls in the webhooks
+        is_win = False
+        if (state == 1):
+            is_win = True
+        data = {
+            "username": username,
+            "game_id": game_id,
+            "number_of_guesses": 6 - guess_remaining,
+            "is_win": is_win,
+        }
+        await push_to_webhooks(data)
+        
         return {
             "game_id": game_id,
             "number_of_guesses": 6 - guess_remaining,
@@ -240,6 +260,29 @@ async def play_game(game_id):
     }, 200
 
 
+def report_result(callback_url, data):
+    httpx.post(callback_url, json=data)
+
+
+async def push_to_webhooks(data):
+    # Get all the URLs in the webhook database then enqueue them all for reporting
+    db = await _get_read_db()
+
+    redis = Redis()
+    queue = Queue(connection=redis)
+    registry = FailedJobRegistry(queue=queue)
+
+    urls = await db.fetch_all(
+        """
+        SELECT *
+        FROM webhooks
+        """,
+    )
+
+    for url_id, callback_url in urls:
+        queue.enqueue(report_result, callback_url, data)
+        
+
 @tag(["Games"])
 @app.route("/games/<string:game_id>", methods=["GET"])
 async def check_game_progress(game_id):
@@ -257,8 +300,8 @@ async def check_game_progress(game_id):
     secret_word = games_output["secret_word"]
     state = 0
     guess_remaining = games_output["guess_remaining"]
-    # Prepare the response
 
+    # Prepare the response
     guesses = await get_guesses(game_id, secret_word)
     return {
         "guesses": guesses,
