@@ -3,15 +3,31 @@ import toml
 import redis
 import os
 import socket
-#import httpx
+import httpx
+import time
 from quart import Quart, g, request, abort, jsonify
 from quart_schema import QuartSchema, RequestSchemaValidationError, validate_request, tag
-
 
 # Initialize the app
 app = Quart(__name__)
 QuartSchema(app, tags=[{"name": "Leaderboard", "description": "Leaderboard for Wordle Scores"}])
 app.config.from_file(f"./etc/wordle.toml", toml.load)
+
+
+# Register webhook with the Games service
+keep_retrying = True
+while (keep_retrying):
+    try:
+        callback_url = "http://" + socket.gethostbyname(socket.getfqdn(""))+":"+ os.environ['PORT'] + "/leaderboard/add"
+        data = {"callback_url": callback_url}
+        response = httpx.post("http://tuffix-vm/webhooks/register", json=data)
+        if (int(response.status_code) > 500):
+            raise
+        keep_retrying = False
+    except:
+        print("An error occurred while trying to register. Retrying again in 10 seconds...", flush=True)
+        time.sleep(10)
+
 
 @dataclasses.dataclass
 class Entry:
@@ -94,10 +110,3 @@ def unauthorized(e):
 def bad_request(e):
     return jsonify({'message': e.description}), 400
 
-# def url_registeration():
-#     url = "http://" + socket.gethostbyname(socket.getfqdn(""))+":"+ os.environ['PORT'] + "/leaderboard/add"
-#     print(url)
-#     data = {"url" :url }
-#     response = httpx.post("http://tuffix-vm/games/urlregisteration",json = data)
-
-# url_registeration()

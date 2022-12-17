@@ -18,6 +18,10 @@ server {
         proxy_pass http://127.0.0.1:5400/leaderboard/top10;
     }
 
+    location /webhooks/register {
+        proxy_pass http://backend/webhooks/register;
+    }
+
     location = /auth {
         internal;
         proxy_pass http://127.0.0.1:5000/login;
