@@ -6,6 +6,4 @@ __pycache__/
 var/*/data/dbs/
 var/*/data/id
 
-
-
 bin/litefs
