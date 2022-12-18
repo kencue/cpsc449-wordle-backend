@@ -37,6 +37,8 @@ Tuffix 2020 (Linux)
 - HTTPie
 - RQ
 - HTTPX
+- Cron
+- run-one
 
 ***Note: Please make sure all these are installed in the system (through pip or apt-get) before setting up the project***
 
@@ -54,7 +56,7 @@ $ cat /etc/hosts
 ```
 ***Note: This project uses the hostname `tuffix-vm`.***
 
-3. Copy the VHost file in `/share` to `/etc/nginx/sites-enabled` then restart nginx 
+3. From the project's directory, copy the VHost file in `/share` to `/etc/nginx/sites-enabled` then restart nginx 
 ```
 $ sudo cp share/wordle /etc/nginx/sites-enabled/wordle
 $ sudo service nginx restart
@@ -87,29 +89,26 @@ $ redis-cli ping
 ```
 If it is not returning `PONG`, check if Redis was properly installed/configured.
 
-### Retrying Failed jobs
-***About Cron - Cron is a daemon that runs scheduled tasks (also known as "cron jobs") at predetermined times. These tasks are specified in the configuration file called the crontab, which can be edited by the user to schedule tasks to run automatically.***
 
-Each line in the crontab file represents a specific task and follows a specific syntax:
+### Setting up the cron scheduler for failed jobs
+1. Go to the project's directory
 
-You can find the crontab file under 
-`/Project4/branch/cpsc449-wordle-backend/crontab.txt`
+2. Make sure that `run-one` is installed 
+```
+$ sudo apt install run-one
+```
 
+3. Run the following command to copy the cron file into the system's cron folder
 ```
-$ */10 * * * * run-one rq requeue --all --queue default
+$ sudo cp share/wordle_cron /etc/cron.d/wordle_cron
 ```
-Here astrisks represents The asterisks represent the following elements:
-    Minute (0-59)
-    Hour (0-23)
-    Day of the month (1-31)
-    Month (1-12)
-    Day of the week (0-6, with 0 representing Sunday)
 
-Run 
+4. Reload cron
 ```
-$ */10 * * * * run-one rq requeue --all --queue default
+$ sudo service cron reload
 ```
-to retry the failed running jobs "Redis Queue (rq)" to requeue and retry them and run after 10 minutes (represented in first astrisk as "10")
+
+***Use `sudo service cron status` to confirm that it has reloaded properly***
 
 
 ## REST API Features

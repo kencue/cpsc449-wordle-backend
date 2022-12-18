@@ -1,0 +1,5 @@
+# crontab entries for the wordle project
+
+SHELL=/bin/sh
+
+*/10 * * * * root run-one sudo rq requeue --all --queue default
